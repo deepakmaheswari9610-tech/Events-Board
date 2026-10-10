@@ -1,6 +1,6 @@
-# Community Events Board — Phase 3
+# Community Events Board — Phase 4
 
-A local events app built with Next.js App Router, TypeScript, MySQL and Prisma. Phases 1–3 provide MySQL data, 15 sample events, a responsive public board with combined filters and pagination, event detail pages and server-protected admin management. Visitor accounts, reminders and the card designer come in later phases.
+A local events app built with Next.js App Router, TypeScript, MySQL and Prisma. Phases 1–4 provide MySQL data, 15 sample events, a responsive public board with combined filters and pagination, event details, protected admin management and visitor accounts with saved favourite categories and My Feed. Reminders and the card designer are Phase 5.
 
 ## Quick setup
 
@@ -34,6 +34,7 @@ Run `npm run db:setup` to generate the client, apply the checked-in migrations a
 - `npm run db:setup`: generate client, deploy migrations and seed.
 - `npm run db:seed`: refresh sample events.
 - `npm run db:admin`: create/update the configured admin account with a salted password hash.
+- `npm run test:phase4`: verify visitor signup/login, JWTs, password hashing, protected pages/APIs, saved and concurrent preferences, user isolation, feed visibility/pagination and logout. Creates two temporary users and five temporary events, removed afterward. Uses `TEST_BASE_URL`.
 - `npm run test:phase3`: verify combined filters, literal search, pagination, API validation, detail visibility and Indian formatting using five temporary fixtures, removed afterward. Uses the same `TEST_BASE_URL` setting.
 - `npm run test:phase2`: run integration checks with the app running at http://127.0.0.1:3001 (`npm run dev -- --port 3001`); set `TEST_BASE_URL` for another URL. Creates and removes one temporary test fixture.
 
@@ -56,6 +57,26 @@ Admin endpoints (protected routes accept the browser session cookie or bearer to
 | PATCH  | `/api/admin/events/:id` | `{ active: boolean }`; changes status. Requires admin.                      |
 
 Create requests use `{ title, category, city, startsAt, price, description, imageUrl }`. `startsAt` is an ISO timestamp with timezone; `price` is a non-negative decimal string. Errors return JSON `{ error }` with 400 (validation), 401 (authentication), 403 (foreign origin), 404 (missing event), or 503 (service unavailable). No admin data is exposed before authorization.
+
+## Visitor accounts and My Feed
+
+Open `/signup` and create an account with an email and a password of at least 12 characters. There is no default visitor account. Signup signs you in; `/login` works for existing visitors. Both take you to `/favourites`, where you can select any of the five categories and save to open `/feed`. You can edit favourites anytime using the navigation or feed button.
+
+Preferences are saved in MySQL and restored after refresh/login. An empty selection is allowed and produces an empty personal feed with a category-selection prompt. When selected categories have no active upcoming events, the feed explains that and links to all events. The feed sorts nearest events first and supports six events per page.
+
+The API returns the JWT in the login/signup JSON response for mobile clients. The website uses the HttpOnly cookie set by those endpoints and does not store tokens in localStorage. Both the visitor cookie and the token expire after eight hours. Sign out clears the visitor cookie; an already issued bearer token remains valid until expiry. Use HTTPS in production for Secure cookies.
+
+| Method | Endpoint           | Behaviour                                                                                          |
+| ------ | ------------------ | -------------------------------------------------------------------------------------------------- |
+| POST   | `/api/auth/signup` | `{ email, password }`; creates a USER account and returns `{ token, user }` (201).                 |
+| POST   | `/api/auth/login`  | `{ email, password }`; returns `{ token, user }` (200).                                            |
+| POST   | `/api/auth/logout` | Clears the visitor session cookie.                                                                 |
+| GET    | `/api/auth/me`     | Current visitor identity; requires visitor authentication.                                         |
+| GET    | `/api/favourites`  | Returns `{ categories: [...] }` for the authenticated visitor.                                     |
+| PUT    | `/api/favourites`  | `{ categories: ["Music", "Food"] }`; replaces the visitor’s saved selection.                       |
+| GET    | `/api/feed`        | Active upcoming events in saved categories; accepts `page` and `pageSize` like the public listing. |
+
+Protected visitor endpoints accept the browser cookie or `Authorization: Bearer <token>`. Their responses are not cached. Email addresses are trimmed and normalized to lowercase. Signup rejects duplicate emails with 409 and rejects role injection; preferences reject unknown/duplicate categories and client-supplied user IDs (extra fields are rejected). APIs derive ownership only from the verified token. Saved preferences use a transaction and per-user row lock so concurrent replacement requests cannot mix category selections. Feed responses include `{ events, categories, pagination }`. The `/feed` and `/favourites` pages also enforce authentication on the server.
 
 ## Admin login
 
@@ -88,11 +109,10 @@ A leading-wildcard substring search cannot use these indexes effectively; consid
 Passwords use Node.js scrypt (N=32768, r=8, p=1) with a random 16-byte salt and constant-time hash comparison; plaintext passwords are not stored in MySQL.
 Login signs an eight-hour HS256 JWT with an issuer, audience and expiry, and sets an HttpOnly, SameSite=Strict cookie (Secure in production).
 The admin page and each event API verify the JWT and recheck the current ADMIN role in MySQL; mutation APIs also validate JSON and reject foreign origins.
-Mobile clients can send the returned token as `Authorization: Bearer <token>`. Logout clears the browser cookie; issued bearer tokens expire naturally. Visitor authentication is Phase 4.
+Mobile clients can send the returned token as `Authorization: Bearer <token>`. Logout clears the browser cookie; issued bearer tokens expire naturally. Visitor authentication is implemented with a separate visitor cookie and JWT audience, so admin and visitor sessions cannot access each other’s protected APIs.
 
 ## What remains
 
-- Phase 4: signup/login, JWT, favourite categories and My Feed.
 - Phase 5: optimistic reminders with rollback and saved animated card designs.
 - Phase 6: end-to-end checks, final README answers and recording.
 
@@ -103,6 +123,8 @@ The responsive layout and Indian date/price formatting are implemented. External
 TypeScript checks and the Next.js production build pass. Prisma client generation succeeds. Dependency installation reports zero vulnerabilities after pinning Prisma/client to compatible 6.12.0 versions. The home page returns HTTP 200 and the events API returns the expected HTTP 503 JSON error when MySQL is unavailable.
 
 The initial migration and the data-preserving integer-ID migration have been applied successfully to the local `community_board` MySQL database, 15 sample events are seeded, and the admin account is created. Phase 2 integration checks pass for page/API protection, successful/failed login, password hashing, cookies, expired/tampered/wrong-role tokens, request validation, creation, saved Active/Inactive status, public visibility, unsupported DELETE requests and logout. The temporary test fixture is removed afterward.
+
+Phase 4 checks pass for signup/login JWTs, salted password hashes, server protection, saved/replaced/concurrent preferences, user isolation, feed filtering and pagination, token rejection, admin/visitor separation and logout. Temporary fixtures are removed after testing. No schema changes are needed: the existing integer User IDs and FavouriteCategory relation are reused.
 
 Phase 3 API checks cover combined/case-insensitive/literal filters, tied-date ordering, pagination without duplicates, page clamping, empty results, invalid queries, city options, public detail visibility and Indian formatting. The admin checks also pass with the paginated API.
 

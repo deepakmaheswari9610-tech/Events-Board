@@ -991,3 +991,246 @@ button:disabled {
     padding-top: 24px;
   }
 }
+.nav-link {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 12px 0;
+}
+.nav-logout {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  padding: 12px 0;
+  font-size: 12px;
+}
+.nav-loading {
+  color: var(--muted);
+  min-width: 35px;
+}
+.nav-container {
+  position: relative;
+}
+.nav-error {
+  position: absolute;
+  right: 0;
+  top: 35px;
+  z-index: 5;
+  background: #fff0eb;
+  color: #963b2e;
+  border-radius: 7px;
+  padding: 10px;
+  font-size: 11px;
+  min-width: 200px;
+}
+.visitor-login {
+  max-width: 480px;
+}
+.visitor-login h1 {
+  font-size: 33px;
+  line-height: 1.2;
+}
+.auth-switch {
+  margin: 24px 0 0;
+  font-size: 12px !important;
+}
+.auth-switch a {
+  color: var(--green);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.password-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin: -8px 0 0;
+}
+.preferences-main {
+  padding-top: 45px;
+  padding-bottom: 60px;
+  min-height: 70vh;
+}
+.preferences-panel {
+  max-width: 720px;
+  margin: auto;
+}
+.preferences-panel h1 {
+  font-size: 40px;
+  letter-spacing: -1.3px;
+  margin: 14px 0;
+}
+.preferences-panel > p {
+  color: var(--muted);
+  font-size: 14px;
+}
+.category-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px;
+  padding: 0;
+  border: 0;
+  margin: 30px 0 25px;
+}
+.category-choice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+}
+.category-choice.selected {
+  background: #eff5ea;
+  border-color: #527859;
+  box-shadow: 0 0 0 1px #527859;
+}
+.category-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.category-choice:focus-within {
+  outline: 3px solid #c57040;
+  outline-offset: 3px;
+}
+.choice-icon {
+  font-size: 30px;
+  color: var(--green);
+  min-width: 30px;
+}
+.category-choice strong {
+  display: block;
+  font-family: Manrope, Arial, sans-serif;
+  font-size: 15px;
+}
+.category-choice small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.5;
+}
+.choice-check {
+  margin-left: auto;
+  font-size: 21px;
+  color: var(--green);
+}
+.preference-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.preference-actions > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.preferences-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 16px 0 25px;
+}
+.feed-main {
+  padding-top: 45px;
+  padding-bottom: 70px;
+  min-height: 70vh;
+}
+.feed-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 25px;
+  scroll-margin-top: 25px;
+}
+.feed-heading h1 {
+  font-size: 42px;
+  letter-spacing: -1.3px;
+  margin: 12px 0;
+}
+.feed-heading p {
+  font-size: 14px;
+  color: var(--muted);
+}
+.feed-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0;
+}
+.category-chip {
+  display: inline-block;
+  background: #edf0e2;
+  padding: 7px 13px;
+  border-radius: 25px;
+  font-size: 11px;
+  color: var(--green);
+  font-weight: 600;
+}
+@media (max-width: 900px) {
+  .header {
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .header .visitor-nav {
+    gap: 18px;
+  }
+}
+@media (max-width: 600px) {
+  .nav-container {
+    width: 100%;
+  }
+  .header .visitor-nav {
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .nav-link,
+  .nav-logout {
+    font-size: 11px;
+  }
+  .preferences-main,
+  .feed-main {
+    padding-top: 30px;
+  }
+  .preferences-panel h1 {
+    font-size: 31px;
+  }
+  .category-choices {
+    grid-template-columns: 1fr;
+    margin-top: 24px;
+  }
+  .category-choice {
+    padding: 17px;
+  }
+  .category-choice small {
+    font-size: 11px;
+  }
+  .preference-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .feed-heading {
+    align-items: start;
+  }
+  .feed-heading h1 {
+    font-size: 33px;
+  }
+  .feed-heading p {
+    font-size: 12px;
+  }
+  .feed-heading .secondary-button {
+    white-space: nowrap;
+    font-size: 11px;
+  }
+  .visitor-login h1 {
+    font-size: 30px;
+  }
+}

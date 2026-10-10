@@ -3,7 +3,9 @@ import { cookies } from "next/headers";
 import { jwtVerify, SignJWT } from "jose";
 import { db } from "@/lib/db";
 export const SESSION_COOKIE = "board_admin_session";
+export const VISITOR_COOKIE = "board_visitor_session";
 export const SESSION_SECONDS = 60 * 60 * 8;
+type SessionRole = "ADMIN" | "USER";
 function secret() {
   const value = process.env.JWT_SECRET;
   if (!value || value.length < 32 || value.startsWith("replace-this-"))
@@ -12,31 +14,48 @@ function secret() {
     );
   return new TextEncoder().encode(value);
 }
-export async function createAdminToken(userId: number) {
-  return new SignJWT({ role: "ADMIN" })
+function audience(role: SessionRole) {
+  return role === "ADMIN" ? "community-board-admin" : "community-board-visitor";
+}
+async function createToken(userId: number, role: SessionRole) {
+  return new SignJWT({ role })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(String(userId))
     .setIssuer("community-board")
-    .setAudience("community-board-admin")
+    .setAudience(audience(role))
     .setIssuedAt()
     .setExpirationTime(`${SESSION_SECONDS}s`)
     .sign(secret());
 }
-export async function getAdmin(request?: Request) {
+export function createAdminToken(userId: number) {
+  return createToken(userId, "ADMIN");
+}
+export function createVisitorToken(userId: number) {
+  return createToken(userId, "USER");
+}
+async function getIdentity(role: SessionRole, request?: Request) {
   const authorization = request?.headers.get("authorization");
-  const token = authorization?.startsWith("Bearer ")
-    ? authorization.slice(7)
-    : (await cookies()).get(SESSION_COOKIE)?.value;
+  const cookie = role === "ADMIN" ? SESSION_COOKIE : VISITOR_COOKIE;
+  // A provided Authorization header is authoritative; never fall back to cookies on invalid bearer credentials.
+  const token = authorization
+    ? authorization.startsWith("Bearer ")
+      ? authorization.slice(7)
+      : null
+    : (await cookies()).get(cookie)?.value;
   if (!token) return null;
   let id: number;
   try {
     const { payload } = await jwtVerify(token, secret(), {
       algorithms: ["HS256"],
       issuer: "community-board",
-      audience: "community-board-admin",
+      audience: audience(role),
     });
-    if (!payload.sub || payload.role !== "ADMIN") return null;
-    if (!/^[1-9]\d*$/.test(payload.sub)) return null;
+    if (
+      !payload.sub ||
+      payload.role !== role ||
+      !/^[1-9]\d*$/.test(payload.sub)
+    )
+      return null;
     id = Number(payload.sub);
     if (!Number.isSafeInteger(id) || id > 2147483647) return null;
   } catch {
@@ -46,7 +65,13 @@ export async function getAdmin(request?: Request) {
     where: { id },
     select: { id: true, email: true, role: true },
   });
-  return user?.role === "ADMIN" ? user : null;
+  return user?.role === role ? user : null;
+}
+export function getAdmin(request?: Request) {
+  return getIdentity("ADMIN", request);
+}
+export function getVisitor(request?: Request) {
+  return getIdentity("USER", request);
 }
 export function cookieOptions() {
   return {

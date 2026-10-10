@@ -1,8 +1,7 @@
 "use client";
-import Link from "next/link";
+import { EventCard } from "@/components/event-card";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { formatDate, formatPrice } from "@/lib/format";
 import { categories } from "@/lib/event-validation";
 import { EventsLoading } from "@/components/events-loading";
 import type { EventSummary, EventsResponse } from "@/lib/types";
@@ -226,43 +225,7 @@ export function EventsBoard() {
           </p>
           <div className="event-grid">
             {result.events.map((event: EventSummary) => (
-              <article className="event-card" key={event.id}>
-                <Link
-                  href={`/events/${event.id}`}
-                  className="event-card-link"
-                  aria-label={`View ${event.title}`}
-                >
-                  <div
-                    className={`event-image image-${event.category.toLowerCase()}`}
-                  >
-                    <img
-                      src={event.imageUrl}
-                      alt=""
-                      loading="lazy"
-                      onError={(event) => {
-                        event.currentTarget.style.display = "none";
-                      }}
-                    />
-                    <span
-                      className={`category category-${event.category.toLowerCase()}`}
-                    >
-                      {event.category}
-                    </span>
-                  </div>
-                  <div className="card-body">
-                    <p className="event-date">{formatDate(event.startsAt)}</p>
-                    <h3>{event.title}</h3>
-                    <p className="event-description">{event.description}</p>
-                    <div className="card-bottom">
-                      <span>⌖ {event.city}</span>
-                      <strong>{formatPrice(event.price)}</strong>
-                    </div>
-                    <span className="view-event">
-                      View event <span aria-hidden="true">↗</span>
-                    </span>
-                  </div>
-                </Link>
-              </article>
+              <EventCard event={event} key={event.id} />
             ))}
           </div>
           {pagination!.totalPages > 1 && (

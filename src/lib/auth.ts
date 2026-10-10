@@ -7,13 +7,15 @@ export const SESSION_SECONDS = 60 * 60 * 8;
 function secret() {
   const value = process.env.JWT_SECRET;
   if (!value || value.length < 32 || value.startsWith("replace-this-"))
-    throw new Error("Set JWT_SECRET to a unique random value of at least 32 characters");
+    throw new Error(
+      "Set JWT_SECRET to a unique random value of at least 32 characters",
+    );
   return new TextEncoder().encode(value);
 }
-export async function createAdminToken(userId: string) {
+export async function createAdminToken(userId: number) {
   return new SignJWT({ role: "ADMIN" })
     .setProtectedHeader({ alg: "HS256" })
-    .setSubject(userId)
+    .setSubject(String(userId))
     .setIssuer("community-board")
     .setAudience("community-board-admin")
     .setIssuedAt()
@@ -26,7 +28,7 @@ export async function getAdmin(request?: Request) {
     ? authorization.slice(7)
     : (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  let id: string;
+  let id: number;
   try {
     const { payload } = await jwtVerify(token, secret(), {
       algorithms: ["HS256"],
@@ -34,7 +36,9 @@ export async function getAdmin(request?: Request) {
       audience: "community-board-admin",
     });
     if (!payload.sub || payload.role !== "ADMIN") return null;
-    id = payload.sub;
+    if (!/^[1-9]\d*$/.test(payload.sub)) return null;
+    id = Number(payload.sub);
+    if (!Number.isSafeInteger(id) || id > 2147483647) return null;
   } catch {
     return null;
   }

@@ -16,7 +16,12 @@ export async function PATCH(
       .object({ active: z.boolean() })
       .strict()
       .parse(await readJson(request));
-    const { id } = await context.params;
+    const { id: rawId } = await context.params;
+    if (!/^[1-9]\d*$/.test(rawId))
+      throw new ApiError(400, "Event ID must be a positive integer.");
+    const id = Number(rawId);
+    if (!Number.isSafeInteger(id) || id > 2147483647)
+      throw new ApiError(400, "Invalid event ID.");
     const event = await db.event.update({ where: { id }, data });
     return NextResponse.json({
       event: { ...event, price: event.price.toFixed(2) },

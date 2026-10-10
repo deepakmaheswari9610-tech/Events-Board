@@ -12,7 +12,7 @@ export function AdminBoard({ email }: { email: string }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const [pending, setPending] = useState<string[]>([]);
+  const [pending, setPending] = useState<number[]>([]);
   const [loggingOut, setLoggingOut] = useState(false);
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,8 +61,7 @@ export function AdminBoard({ email }: { email: string }) {
       if (!response.ok) throw new Error(data.error);
       setEvents((current) =>
         [...current, data.event].sort(
-          (a, b) =>
-            a.startsAt.localeCompare(b.startsAt) || a.id.localeCompare(b.id),
+          (a, b) => a.startsAt.localeCompare(b.startsAt) || a.id - b.id,
         ),
       );
       form.reset();

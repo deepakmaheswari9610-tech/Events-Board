@@ -1,5 +1,5 @@
 export interface EventSummary {
-  id: string;
+  id: number;
   title: string;
   category: string;
   city: string;

@@ -23,7 +23,7 @@ Open http://localhost:3000. If port 3306 is occupied, change the host port in `c
 CREATE DATABASE community_board CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-Run `npm run db:setup` to generate the client, apply the checked-in migration and seed data. `npm run db:seed` can be rerun: it updates only the 15 stable sample IDs. Sample dates are recalculated relative to today in IST. The seed contains 11 active upcoming events, two inactive upcoming events and two past events, covering Music, Workshop, Food, Sports and Kids in Coimbatore, Chennai and Bengaluru.
+Run `npm run db:setup` to generate the client, apply the checked-in migrations and seed data. `npm run db:seed` can be rerun: it updates only the 15 stable sample IDs. Sample dates are recalculated relative to today in IST. The seed contains 11 active upcoming events, two inactive upcoming events and two past events, covering Music, Workshop, Food, Sports and Kids in Coimbatore, Chennai and Bengaluru.
 
 ## Commands
 
@@ -65,6 +65,7 @@ After login, `/admin` lets you add an event and make any event Active or Inactiv
 
 ## Database structure and design
 
+`User` and `Event` have MySQL `INT AUTO_INCREMENT` primary keys; every `userId`/`eventId` foreign key is also `INT`, keeping relation indexes compact.
 `User` stores a unique email, password hash and role; `Event` stores category, city, UTC start time, decimal INR price and active status.
 `FavouriteCategory` and `Reminder` use composite keys to prevent duplicate preferences and reminders.
 `CardDesign` stores one theme and a JSON sticker array per user/event; the API will validate its maximum of three stickers in Phase 5.
@@ -97,8 +98,12 @@ The responsive layout and Indian date/price formatting are implemented. External
 
 TypeScript checks and the Next.js production build pass. Prisma client generation succeeds. Dependency installation reports zero vulnerabilities after pinning Prisma/client to compatible 6.12.0 versions. The home page returns HTTP 200 and the events API returns the expected HTTP 503 JSON error when MySQL is unavailable.
 
-The initial migration has been applied successfully to the local `community_board` MySQL database, 15 sample events are seeded, and the admin account is created. Phase 2 integration checks pass for page/API protection, successful/failed login, password hashing, cookies, expired/tampered/wrong-role tokens, request validation, creation, saved Active/Inactive status, public visibility, unsupported DELETE requests and logout. The temporary test fixture is removed afterward.
+The initial migration and the data-preserving integer-ID migration have been applied successfully to the local `community_board` MySQL database, 15 sample events are seeded, and the admin account is created. Phase 2 integration checks pass for page/API protection, successful/failed login, password hashing, cookies, expired/tampered/wrong-role tokens, request validation, creation, saved Active/Inactive status, public visibility, unsupported DELETE requests and logout. The temporary test fixture is removed afterward.
 
 Responsive CSS is implemented, but phone/laptop browser visual checks have not been performed. Recording and GitHub submission remain for Phase 6.
 
 Framework references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [Prisma 6 seeding](https://www.prisma.io/docs/orm/v6/prisma-migrate/workflows/seeding).
+
+## Integer ID migration checkpoint
+
+`20261010000200_integer_ids` converts User/Event IDs and all related foreign keys to integers without resetting the database. Sample events keep IDs 1–15, and other events use the auto-increment sequence from 16 onward. API event/user IDs are JSON numbers; URL parameters are validated and converted to integers. JWT subjects use the decimal ID encoded as a string, as required by JWT. Existing sessions from before the conversion require signing in again. A private pre-migration backup was saved locally and compared against the resulting database; all existing admin/event fields were preserved.

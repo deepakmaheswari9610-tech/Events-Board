@@ -29,7 +29,7 @@ async function main() {
   );
   assert.equal(
     (
-      await request("/api/admin/events/sample-event-01", {
+      await request("/api/admin/events/1", {
         method: "PATCH",
         body: { active: false },
       })
@@ -37,8 +37,7 @@ async function main() {
     401,
   );
   assert.equal(
-    (await request("/api/admin/events/sample-event-01", { method: "DELETE" }))
-      .status,
+    (await request("/api/admin/events/1", { method: "DELETE" })).status,
     405,
   );
   assert.equal(
@@ -79,7 +78,7 @@ async function main() {
   ]) {
     const invalid = await new SignJWT({ role })
       .setProtectedHeader({ alg: "HS256" })
-      .setSubject(user.id)
+      .setSubject(String(user.id))
       .setIssuer("community-board")
       .setAudience("community-board-admin")
       .setExpirationTime(expiry)
@@ -146,22 +145,25 @@ async function main() {
   const data = (await created.json()).event;
   createdId = data.id;
   assert.equal(data.price, "150000.00");
+  assert.equal(typeof data.id, "number");
+  assert.equal(typeof user.id, "number");
+  assert.equal(
+    (
+      await request("/api/admin/events/not-an-integer", {
+        method: "PATCH",
+        token,
+        body: { active: false },
+      })
+    ).status,
+    400,
+  );
   assert.equal(data.active, true);
   let publicEvents = (await (await request("/api/events")).json()).events;
   assert.ok(publicEvents.some((value) => value.id === createdId));
   assert.ok(
     publicEvents.every((value) => new Date(value.startsAt) >= new Date()),
   );
-  assert.ok(
-    !publicEvents.some((value) =>
-      [
-        "sample-event-12",
-        "sample-event-13",
-        "sample-event-14",
-        "sample-event-15",
-      ].includes(value.id),
-    ),
-  );
+  assert.ok(!publicEvents.some((value) => [12, 13, 14, 15].includes(value.id)));
   assert.deepEqual(
     publicEvents.map((value) => value.startsAt),
     [...publicEvents.map((value) => value.startsAt)].sort(),
@@ -194,7 +196,7 @@ async function main() {
   );
   assert.equal(
     (
-      await request("/api/admin/events/missing-event", {
+      await request("/api/admin/events/2147483647", {
         method: "PATCH",
         token,
         body: { active: false },

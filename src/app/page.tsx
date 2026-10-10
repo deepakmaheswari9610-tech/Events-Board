@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { EventsLoading } from "@/components/events-loading";
 import { EventsBoard } from "@/components/events-board";
 export default function Home() {
   return (
@@ -37,7 +39,9 @@ export default function Home() {
             A new memory is just around the corner.
           </span>
         </div>
-        <EventsBoard />
+        <Suspense fallback={<EventsLoading />}>
+          <EventsBoard />
+        </Suspense>
       </section>
     </main>
   );

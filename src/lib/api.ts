@@ -35,7 +35,7 @@ export function apiError(error: unknown) {
       { error: error.issues[0]?.message ?? "Invalid request." },
       { status: 400 },
     );
-  console.error("Admin API failed", error);
+  console.error("API failed", error);
   return NextResponse.json(
     { error: "The service is unavailable. Please try again." },
     { status: 503 },

@@ -158,7 +158,8 @@ async function main() {
     400,
   );
   assert.equal(data.active, true);
-  let publicEvents = (await (await request("/api/events")).json()).events;
+  let publicEvents = (await (await request("/api/events?pageSize=50")).json())
+    .events;
   assert.ok(publicEvents.some((value) => value.id === createdId));
   assert.ok(
     publicEvents.every((value) => new Date(value.startsAt) >= new Date()),
@@ -178,7 +179,8 @@ async function main() {
     ).status,
     200,
   );
-  publicEvents = (await (await request("/api/events")).json()).events;
+  publicEvents = (await (await request("/api/events?pageSize=50")).json())
+    .events;
   assert.ok(!publicEvents.some((value) => value.id === createdId));
   assert.equal(
     (await db.event.findUnique({ where: { id: createdId } })).active,

@@ -8,3 +8,13 @@ export interface EventSummary {
   description: string;
   imageUrl: string;
 }
+
+export interface EventsResponse {
+  events: EventSummary[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}

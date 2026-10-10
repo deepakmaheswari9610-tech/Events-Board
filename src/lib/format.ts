@@ -4,6 +4,7 @@ export function formatPrice(price: string | number) {
     : new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
+        minimumFractionDigits: Number.isInteger(Number(price)) ? 0 : 2,
         maximumFractionDigits: 2,
       }).format(Number(price));
 }

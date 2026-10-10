@@ -12,7 +12,8 @@
     "db:seed": "prisma db seed",
     "db:setup": "npm run db:generate && npm run db:migrate && npm run db:seed",
     "db:admin": "tsx --env-file=.env prisma/seed-admin.ts",
-    "test:phase2": "node --env-file=.env scripts/verify-phase2.mjs"
+    "test:phase2": "node --env-file=.env scripts/verify-phase2.mjs",
+    "test:phase3": "tsx --env-file=.env scripts/verify-phase3.ts"
   },
   "dependencies": {
     "@prisma/client": "6.12.0",

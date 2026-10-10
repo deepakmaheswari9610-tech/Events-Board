@@ -1,6 +1,6 @@
-# Community Events Board — Phase 2
+# Community Events Board — Phase 3
 
-A local events app built with Next.js App Router, TypeScript, MySQL and Prisma. Phases 1 and 2 provide the database, 15 sample events, responsive public board and server-protected admin event management. Visitor accounts, filters, reminders and the card designer come in later phases.
+A local events app built with Next.js App Router, TypeScript, MySQL and Prisma. Phases 1–3 provide MySQL data, 15 sample events, a responsive public board with combined filters and pagination, event detail pages and server-protected admin management. Visitor accounts, reminders and the card designer come in later phases.
 
 ## Quick setup
 
@@ -34,11 +34,16 @@ Run `npm run db:setup` to generate the client, apply the checked-in migrations a
 - `npm run db:setup`: generate client, deploy migrations and seed.
 - `npm run db:seed`: refresh sample events.
 - `npm run db:admin`: create/update the configured admin account with a salted password hash.
+- `npm run test:phase3`: verify combined filters, literal search, pagination, API validation, detail visibility and Indian formatting using five temporary fixtures, removed afterward. Uses the same `TEST_BASE_URL` setting.
 - `npm run test:phase2`: run integration checks with the app running at http://127.0.0.1:3001 (`npm run dev -- --port 3001`); set `TEST_BASE_URL` for another URL. Creates and removes one temporary test fixture.
 
 ## JSON API
 
-`GET /api/events` returns `{ events: [...] }` containing only active, upcoming events sorted by date, then ID. Dates are ISO UTC strings; prices are decimal strings to avoid precision loss. Database failures return HTTP 503 with `{ error: "..." }`. The browser fetches this JSON API, rather than accessing the database. Filtering and pagination will be added in Phase 3; this initial endpoint has no query parameters.
+`GET /api/events` returns `{ events: [...] }` containing only active, upcoming events sorted by date, then ID. Dates are ISO UTC strings; prices are decimal strings to avoid precision loss. Database failures return HTTP 503 with `{ error: "..." }`. The browser fetches this JSON API, rather than accessing the database. Optional query parameters are `category`, `city`, `q`, `page` (default 1) and `pageSize` (default 6, maximum 50). All filters work together. Search matches title, description or city, case-insensitively using the MySQL collation; `%`, `_` and backslash are treated literally. The response also includes `pagination: { page, pageSize, total, totalPages }`. Pages beyond the last page are clamped; an empty result has page 1 and totalPages 0. Invalid query values return HTTP 400.
+
+Example: `/api/events?category=Music&city=Coimbatore&q=night&page=1&pageSize=6`.
+
+`GET /api/events/options` returns categories and distinct cities with active upcoming events. `GET /api/events/:id` returns `{ event }` for an active upcoming event; inactive, past or missing events return 404. The public board and detail pages fetch these JSON APIs. Filters and the page number live in the URL so refresh and browser Back/Forward preserve them. Category/city changes apply immediately; submit text search with Search or Enter. Changing filters resets pagination to page 1.
 
 Admin endpoints (protected routes accept the browser session cookie or bearer token):
 
@@ -73,10 +78,10 @@ Foreign keys keep references valid, while events are deactivated rather than del
 
 ## Filters and indexes
 
-The current query combines `active = true` with `startsAt >= now` and sorts by start time and ID.
-Phase 3 will add category, city and text conditions to the same AND query, together with pagination.
-The schema includes `(active, startsAt)` and `(active, category, city, startsAt)` indexes for the basic listing and common combined filters.
-Substring search will not benefit from those indexes; for a larger dataset, consider MySQL FULLTEXT indexing with documented search semantics.
+The Prisma query ANDs active/upcoming conditions with category and city, then adds an OR across title, description and city for text search.
+It orders by `(startsAt, id)` and uses `skip`/`take`; the count and page query share a Repeatable Read transaction for a consistent response.
+Existing `(active, startsAt)` and `(active, category, city, startsAt)` indexes support the base and combined listings; add `(active, city, startsAt)` if city-only searches become frequent.
+A leading-wildcard substring search cannot use these indexes effectively; consider FULLTEXT for larger datasets, accepting its word-based search semantics.
 
 ## Passwords and admin protection
 
@@ -87,7 +92,6 @@ Mobile clients can send the returned token as `Authorization: Bearer <token>`. L
 
 ## What remains
 
-- Phase 3: combined category/city/search filters, pagination and event detail page.
 - Phase 4: signup/login, JWT, favourite categories and My Feed.
 - Phase 5: optimistic reminders with rollback and saved animated card designs.
 - Phase 6: end-to-end checks, final README answers and recording.
@@ -99,6 +103,8 @@ The responsive layout and Indian date/price formatting are implemented. External
 TypeScript checks and the Next.js production build pass. Prisma client generation succeeds. Dependency installation reports zero vulnerabilities after pinning Prisma/client to compatible 6.12.0 versions. The home page returns HTTP 200 and the events API returns the expected HTTP 503 JSON error when MySQL is unavailable.
 
 The initial migration and the data-preserving integer-ID migration have been applied successfully to the local `community_board` MySQL database, 15 sample events are seeded, and the admin account is created. Phase 2 integration checks pass for page/API protection, successful/failed login, password hashing, cookies, expired/tampered/wrong-role tokens, request validation, creation, saved Active/Inactive status, public visibility, unsupported DELETE requests and logout. The temporary test fixture is removed afterward.
+
+Phase 3 API checks cover combined/case-insensitive/literal filters, tied-date ordering, pagination without duplicates, page clamping, empty results, invalid queries, city options, public detail visibility and Indian formatting. The admin checks also pass with the paginated API.
 
 Responsive CSS is implemented, but phone/laptop browser visual checks have not been performed. Recording and GitHub submission remain for Phase 6.
 

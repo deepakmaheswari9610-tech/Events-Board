@@ -10,7 +10,11 @@ export class ApiError extends Error {
 }
 export function checkOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin)
+  const expected = new URL(request.url);
+  // Next.js may use its internal hostname in request.url; browsers use the public Host.
+  const host = request.headers.get("host");
+  if (host) expected.host = host;
+  if (origin && origin !== expected.origin)
     throw new ApiError(403, "This request is not allowed.");
 }
 export async function readJson(request: Request) {

@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { ReminderButton } from "@/components/reminder-button";
+import { CardDesigner } from "@/components/card-designer";
 import { useEffect, useState } from "react";
 import { formatDate, formatPrice } from "@/lib/format";
 import type { EventSummary } from "@/lib/types";
@@ -118,10 +120,14 @@ export function EventDetail({ id }: { id: number }) {
                   </span>
                 </p>
               </div>
+              <div className="detail-reminder">
+                <ReminderButton eventId={event.id} />
+              </div>
               <section className="detail-description">
                 <h2>A little about this event</h2>
                 <p>{event.description}</p>
               </section>
+              <CardDesigner event={event} />
             </div>
           </article>
         )

@@ -1234,3 +1234,261 @@ button:disabled {
     font-size: 30px;
   }
 }
+.event-card-link {
+  height: auto;
+}
+.event-card-actions {
+  padding: 0 20px 20px;
+}
+.reminder-button {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  background: #f5f6ef;
+  color: var(--green);
+  border: 1px solid #ccd5c8;
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+.reminder-button.is-reminded {
+  background: #e5f1e5;
+  border-color: #527859;
+}
+.reminder-saving {
+  font-size: 10px;
+  font-weight: 400;
+}
+.reminder-error {
+  font-size: 11px;
+  color: #963b2e;
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+.detail-reminder {
+  max-width: 240px;
+  margin-top: 20px;
+}
+.card-designer {
+  border-top: 1px solid var(--border);
+  margin-top: 30px;
+  padding-top: 30px;
+}
+.designer-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 15px;
+  margin-bottom: 22px;
+}
+.designer-heading h2 {
+  margin: 8px 0;
+  font-size: 24px;
+}
+.designer-heading p {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+.design-save-status {
+  font-size: 10px;
+  color: var(--muted);
+  padding-top: 12px;
+}
+.designer-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 28px;
+  align-items: center;
+}
+.designed-card {
+  border-radius: 16px;
+  min-height: 310px;
+  padding: 26px;
+  position: relative;
+  overflow: hidden;
+  background-image: radial-gradient(
+    circle at 95% 10%,
+    #ffffff70 0 25%,
+    transparent 25.2%
+  );
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease;
+  box-shadow: 0 8px 24px #243e3610;
+}
+.theme-sunset {
+  background-color: #f2d7bc;
+  color: #69432c;
+}
+.theme-ocean {
+  background-color: #cce4eb;
+  color: #244a60;
+}
+.theme-garden {
+  background-color: #dbe7c8;
+  color: #365634;
+}
+.designed-category {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.designed-card h3 {
+  font-size: 25px;
+  letter-spacing: -0.7px;
+  line-height: 1.3;
+  margin: 20px 0 12px;
+  position: relative;
+  overflow-wrap: anywhere;
+}
+.designed-card > p {
+  font-size: 11px;
+  margin: 10px 0;
+}
+.designed-card > strong {
+  font-size: 16px;
+}
+.card-stickers {
+  display: flex;
+  min-height: 62px;
+  gap: 13px;
+  margin: 12px 0 14px;
+  align-items: center;
+}
+.placed-sticker {
+  position: relative;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 35px;
+  animation: sticker-arrive 0.3s ease-out;
+}
+.placed-sticker:nth-child(2) {
+  transform: rotate(12deg);
+}
+.placed-sticker:nth-child(3) {
+  transform: rotate(-10deg);
+}
+.placed-sticker > span {
+  position: absolute;
+  right: -7px;
+  top: -1px;
+  border-radius: 50%;
+  background: white;
+  color: var(--muted);
+  font-size: 11px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+}
+.designed-brand {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.designer-controls fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 24px;
+  min-width: 0;
+}
+.designer-controls legend {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.designer-controls legend > span {
+  color: var(--muted);
+  font-weight: 400;
+}
+.theme-options {
+  display: flex;
+  gap: 8px;
+}
+.theme-option {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 12px 11px;
+  font-size: 11px;
+  flex: 1;
+}
+.theme-option.chosen {
+  border-color: var(--green);
+  box-shadow: 0 0 0 2px white inset;
+}
+.sticker-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sticker-option {
+  background: #f5f6ef;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px;
+  font-size: 23px;
+}
+.sticker-option:hover {
+  background: #e8edde;
+}
+.sticker-hint {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+.designer-signin {
+  font-size: 12px;
+  color: var(--muted);
+}
+.designer-signin a {
+  color: var(--green);
+  font-weight: 700;
+  text-decoration: underline;
+}
+@keyframes sticker-arrive {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@media (max-width: 600px) {
+  .designer-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .designer-heading {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .design-save-status {
+    padding: 0;
+  }
+  .designed-card {
+    min-height: 280px;
+  }
+  .designer-heading h2 {
+    font-size: 22px;
+  }
+  .detail-reminder {
+    max-width: none;
+  }
+  .theme-option {
+    padding: 13px;
+  }
+  .sticker-option {
+    font-size: 25px;
+    padding: 11px;
+  }
+}

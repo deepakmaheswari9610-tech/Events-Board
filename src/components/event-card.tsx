@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { ReminderButton } from "@/components/reminder-button";
 import { formatDate, formatPrice } from "@/lib/format";
 import type { EventSummary } from "@/lib/types";
 export function EventCard({ event }: { event: EventSummary }) {
@@ -36,6 +37,9 @@ export function EventCard({ event }: { event: EventSummary }) {
           </span>
         </div>
       </Link>
+      <div className="event-card-actions">
+        <ReminderButton eventId={event.id} />
+      </div>
     </article>
   );
 }

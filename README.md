@@ -1,6 +1,6 @@
-# Community Events Board — Phase 4
+# Community Events Board — Phase 5
 
-A local events app built with Next.js App Router, TypeScript, MySQL and Prisma. Phases 1–4 provide MySQL data, 15 sample events, a responsive public board with combined filters and pagination, event details, protected admin management and visitor accounts with saved favourite categories and My Feed. Reminders and the card designer are Phase 5.
+A local events app built with Next.js App Router, TypeScript, MySQL and Prisma. Phases 1–5 provide MySQL data, 15 sample events, a responsive public board with combined filters and pagination, event details, protected admin management, visitor accounts with saved favourites/My Feed, saved reminders and a live card designer. Final submission preparation is Phase 6.
 
 ## Quick setup
 
@@ -34,6 +34,8 @@ Run `npm run db:setup` to generate the client, apply the checked-in migrations a
 - `npm run db:setup`: generate client, deploy migrations and seed.
 - `npm run db:seed`: refresh sample events.
 - `npm run db:admin`: create/update the configured admin account with a salted password hash.
+- `npm run test:phase5`: verify saved reminders, designs, per-user isolation, themes/sticker validation, unavailable events and origin protection with temporary fixtures.
+- `npm run test:phase5:ui`: isolated Chrome test for immediate reminder changes, failed-save rollback, refresh persistence, themes/stickers, phone overflow and reduced motion. On macOS uses installed Google Chrome; set `CHROME_EXECUTABLE` to use another Chromium executable. Screenshots default to `/private/tmp/community-board-phase5`; override with `TEST_ARTIFACT_DIR`. Uses `TEST_BASE_URL`.
 - `npm run test:phase4`: verify visitor signup/login, JWTs, password hashing, protected pages/APIs, saved and concurrent preferences, user isolation, feed visibility/pagination and logout. Creates two temporary users and five temporary events, removed afterward. Uses `TEST_BASE_URL`.
 - `npm run test:phase3`: verify combined filters, literal search, pagination, API validation, detail visibility and Indian formatting using five temporary fixtures, removed afterward. Uses the same `TEST_BASE_URL` setting.
 - `npm run test:phase2`: run integration checks with the app running at http://127.0.0.1:3001 (`npm run dev -- --port 3001`); set `TEST_BASE_URL` for another URL. Creates and removes one temporary test fixture.
@@ -78,6 +80,21 @@ The API returns the JWT in the login/signup JSON response for mobile clients. Th
 
 Protected visitor endpoints accept the browser cookie or `Authorization: Bearer <token>`. Their responses are not cached. Email addresses are trimmed and normalized to lowercase. Signup rejects duplicate emails with 409 and rejects role injection; preferences reject unknown/duplicate categories and client-supplied user IDs (extra fields are rejected). APIs derive ownership only from the verified token. Saved preferences use a transaction and per-user row lock so concurrent replacement requests cannot mix category selections. Feed responses include `{ events, categories, pagination }`. The `/feed` and `/favourites` pages also enforce authentication on the server.
 
+## Reminders and card designer
+
+Every public/feed event card and the event detail page includes a Remind me button. Sign in to save reminders. Toggling updates the button immediately, disables repeat clicks during the save, and restores the previous state with an error message if saving fails. GET restores the saved state after refresh; PUT is idempotent. Each reminder belongs to one authenticated visitor and event.
+
+Open an event detail page to use Design your card. Choose Sunset, Ocean or Garden, and add any of the five stickers (Star, Music, Heart, Flower, Party), up to three at a time. Tap a sticker on the preview to remove it. The card changes live, with background transitions and sticker animations that respect reduced-motion preferences. Signed-in changes autosave per visitor/event; controls wait for each save to avoid out-of-order updates. Failed saves restore the prior choice and show a retryable message. Signed-out visitors can preview a design and are prompted to sign in to save it.
+
+| Method | Endpoint                   | Behaviour                                                                       |
+| ------ | -------------------------- | ------------------------------------------------------------------------------- |
+| GET    | `/api/events/:id/reminder` | Returns `{ reminded: boolean }` for the authenticated visitor.                  |
+| PUT    | `/api/events/:id/reminder` | `{ reminded: boolean }`; saves or removes the reminder.                         |
+| GET    | `/api/events/:id/design`   | Returns `{ design: { theme, stickers } }`; defaults to Sunset without stickers. |
+| PUT    | `/api/events/:id/design`   | `{ theme: "OCEAN", stickers: ["STAR", "MUSIC"] }`; replaces the saved design.   |
+
+All four endpoints require a visitor cookie or JWT bearer token, enforce active/upcoming event availability, and derive ownership from authentication. ID and JSON validation reject malformed requests, unknown themes/stickers, more than three stickers and client-supplied user IDs. Mutation routes reject foreign origins. No migration is needed: existing integer-keyed Reminder and CardDesign tables are reused.
+
 ## Admin login
 
 Open `/admin/login` (or click Admin in the header). The example local credentials are:
@@ -94,7 +111,7 @@ After login, `/admin` lets you add an event and make any event Active or Inactiv
 `User` and `Event` have MySQL `INT AUTO_INCREMENT` primary keys; every `userId`/`eventId` foreign key is also `INT`, keeping relation indexes compact.
 `User` stores a unique email, password hash and role; `Event` stores category, city, UTC start time, decimal INR price and active status.
 `FavouriteCategory` and `Reminder` use composite keys to prevent duplicate preferences and reminders.
-`CardDesign` stores one theme and a JSON sticker array per user/event; the API will validate its maximum of three stickers in Phase 5.
+`CardDesign` stores one theme and a JSON sticker array per user/event; the API validates the three-sticker limit and accepts only the five supported sticker IDs.
 Foreign keys keep references valid, while events are deactivated rather than deleted. These tables prepare later phases without implementing their features yet.
 
 ## Filters and indexes
@@ -113,7 +130,6 @@ Mobile clients can send the returned token as `Authorization: Bearer <token>`. L
 
 ## What remains
 
-- Phase 5: optimistic reminders with rollback and saved animated card designs.
 - Phase 6: end-to-end checks, final README answers and recording.
 
 The responsive layout and Indian date/price formatting are implemented. External Google Fonts and Unsplash images require internet; system font and coloured image fallbacks remain available. Dates are displayed in Asia/Kolkata.
@@ -128,7 +144,7 @@ Phase 4 checks pass for signup/login JWTs, salted password hashes, server protec
 
 Phase 3 API checks cover combined/case-insensitive/literal filters, tied-date ordering, pagination without duplicates, page clamping, empty results, invalid queries, city options, public detail visibility and Indian formatting. The admin checks also pass with the paginated API.
 
-Responsive CSS is implemented, but phone/laptop browser visual checks have not been performed. Recording and GitHub submission remain for Phase 6.
+Phase 5 API and isolated Chrome tests pass for immediate reminders, failed-save rollback/error messages, refresh persistence, themes, three-sticker cap, removal, saved card choices, phone overflow and reduced motion. The event detail/designer page was reviewed at 1440px laptop and 390px phone widths; screenshot artifacts are in `/private/tmp/community-board-phase5`. Other pages still need the final visual review in Phase 6. Recording and GitHub submission remain for Phase 6.
 
 Framework references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [Prisma 6 seeding](https://www.prisma.io/docs/orm/v6/prisma-migrate/workflows/seeding).
 

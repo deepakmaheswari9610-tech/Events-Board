@@ -11,13 +11,14 @@ Prerequisites: Node.js 20.9+ and a running MySQL 8+ server. Setup takes a few mi
 1. Install dependencies:
 
    ```sh
-   npm ci![alt text](image.png)
+   npm ci
    ```
 
 2. Create `.env.development.local` in the project root with:
 
    ```dotenv
    NODE_ENV=development
+   APP_URL=http://localhost:3000
    DATABASE_URL="mysql://YOUR_MYSQL_USER:YOUR_MYSQL_PASSWORD@127.0.0.1:3306/community_board"
    JWT_SECRET="replace-with-your-generated-secret"
    ADMIN_EMAIL="admin@community.local"
@@ -169,14 +170,14 @@ npm run start
 
 Use HTTPS in production. JWT refresh tokens are not implemented: users sign in again after eight hours. Logout clears the browser cookie; a copied bearer token remains valid until expiry. Secrets must stay out of Git.
 
-## Submission status and remaining work
+## AI tool usage
 
-The application requirements are implemented; TypeScript/build and previous API/browser checks passed. Fresh MySQL setup is checked with all four migrations and seed data. Automated phase test scripts are no longer included in this repository.
+I used OpenAI Codex to help optimize code, improve directory structure, fix bugs, review code and suggest improvements.
 
-- Commit and push the current changes, preserving the regular phase commits.
-- Record a **3–4 minute walkthrough in your own voice** showing both phone and laptop layouts and explaining two or three code choices.
-- Add the recording share link below and confirm reviewers can watch it.
+## Recording
 
-Recording: **pending**.
+https://www.loom.com/share/5896f1246f814022aa1abccf48dfe9fe
 
-Suggested recording sequence: laptop filters/pagination → visitor signup/favourites/feed → phone reminder/designer and refresh persistence → admin create/edit/status → briefly explain integer relations, server auth and optimistic rollback. The video is a required submission item and has not been created by this app.
+## Live URL
+
+https://board.deepakkogta.com/

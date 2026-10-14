@@ -8,15 +8,24 @@ export class ApiError extends Error {
     super(message);
   }
 }
+
 export function checkOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  const expected = new URL(request.url);
-  // Next.js may use its internal hostname in request.url; browsers use the public Host.
-  const host = request.headers.get("host");
-  if (host) expected.host = host;
-  if (origin && origin !== expected.origin)
+
+  if (!origin) return;
+
+  const allowedOrigins = new Set([
+    process.env.APP_URL,
+    ...(process.env.NODE_ENV !== "production"
+      ? ["http://localhost:3000", "http://127.0.0.1:3000"]
+      : []),
+  ].filter((value): value is string => Boolean(value)));
+
+  if (!allowedOrigins.has(origin)) {
     throw new ApiError(403, "This request is not allowed.");
+  }
 }
+
 export async function readJson(request: Request) {
   if (!request.headers.get("content-type")?.includes("application/json"))
     throw new ApiError(415, "Send a JSON request.");

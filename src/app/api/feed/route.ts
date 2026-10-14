@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
+import { catalogSelect } from "@/lib/catalogs";
 import { getVisitor } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ApiError, apiError } from "@/lib/api";
@@ -22,13 +23,14 @@ export async function GET(request: Request) {
       async (tx) => {
         const favourites = await tx.favouriteCategory.findMany({
           where: { userId: user.id },
-          orderBy: { category: "asc" },
+          orderBy: { category: { name: "asc" } },
+          include: { category: { select: catalogSelect } },
         });
         const categories = favourites.map((value) => value.category);
         const where = {
           active: true,
           startsAt: { gte: now },
-          category: { in: categories },
+          categoryId: { in: favourites.map((value) => value.categoryId) },
         };
         const total = await tx.event.count({ where });
         const totalPages = Math.ceil(total / query.pageSize);

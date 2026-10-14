@@ -1,153 +1,182 @@
-# Community Events Board — Phase 5
+# Community Events Board
 
-A local events app built with Next.js App Router, TypeScript, MySQL and Prisma. Phases 1–5 provide MySQL data, 15 sample events, a responsive public board with combined filters and pagination, event details, protected admin management, visitor accounts with saved favourites/My Feed, saved reminders and a live card designer. Final submission preparation is Phase 6.
+A community events app built with **Next.js App Router, TypeScript, MySQL and Prisma**. Admins manage events; visitors browse, choose favourite categories, save reminders and design event cards.
+
+Repository: [Events-Board](https://github.com/deepakmaheswari9610-tech/Events-Board)
 
 ## Quick setup
 
-Prerequisites: Node.js 20.9+ and Docker Desktop running (or an existing MySQL 8+ database). After dependencies and the MySQL image download, setup takes a few minutes.
+Prerequisites: Node.js 20.9+ and a running MySQL 8+ server. Setup takes a few minutes after dependencies download.
 
-```sh
-npm ci
-cp .env.example .env
-docker compose up -d --wait
-# Replace JWT_SECRET in .env with the output of:
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-npm run db:setup
-npm run db:admin
-npm run dev
-```
+1. Install dependencies:
 
-Open http://localhost:3000. If port 3306 is occupied, change the host port in `compose.yaml` and update `DATABASE_URL` accordingly. For an existing MySQL/phpMyAdmin server, set `DATABASE_URL` in `.env` to its credentials and port; skip Docker. For example, a local server with root/root credentials uses `mysql://root:root@127.0.0.1:3306/community_board`. Create the database if it does not exist. URL-encode special characters in the database password. Never commit `.env`.
+   ```sh
+   npm ci![alt text](image.png)
+   ```
 
-```sql
-CREATE DATABASE community_board CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+2. Create `.env.development.local` in the project root with:
 
-Run `npm run db:setup` to generate the client, apply the checked-in migrations and seed data. `npm run db:seed` can be rerun: it updates only the 15 stable sample IDs. Sample dates are recalculated relative to today in IST. The seed contains 11 active upcoming events, two inactive upcoming events and two past events, covering Music, Workshop, Food, Sports and Kids in Coimbatore, Chennai and Bengaluru.
+   ```dotenv
+   NODE_ENV=development
+   DATABASE_URL="mysql://YOUR_MYSQL_USER:YOUR_MYSQL_PASSWORD@127.0.0.1:3306/community_board"
+   JWT_SECRET="replace-with-your-generated-secret"
+   ADMIN_EMAIL="admin@community.local"
+   ADMIN_PASSWORD="CommunityAdmin@123"
+   ```
 
-## Commands
+   Generate a stable secret with the command below and paste its output into `JWT_SECRET`. Environment files are ignored by Git.
 
-- `npm run dev`: development server.
-- `npm run typecheck`: TypeScript checks.
-- `npm run build`: production build.
-- `npm run start`: serve the production build.
-- `npm run db:setup`: generate client, deploy migrations and seed.
-- `npm run db:seed`: refresh sample events.
-- `npm run db:admin`: create/update the configured admin account with a salted password hash.
-- `npm run test:phase5`: verify saved reminders, designs, per-user isolation, themes/sticker validation, unavailable events and origin protection with temporary fixtures.
-- `npm run test:phase5:ui`: isolated Chrome test for immediate reminder changes, failed-save rollback, refresh persistence, themes/stickers, phone overflow and reduced motion. On macOS uses installed Google Chrome; set `CHROME_EXECUTABLE` to use another Chromium executable. Screenshots default to `/private/tmp/community-board-phase5`; override with `TEST_ARTIFACT_DIR`. Uses `TEST_BASE_URL`.
-- `npm run test:phase4`: verify visitor signup/login, JWTs, password hashing, protected pages/APIs, saved and concurrent preferences, user isolation, feed visibility/pagination and logout. Creates two temporary users and five temporary events, removed afterward. Uses `TEST_BASE_URL`.
-- `npm run test:phase3`: verify combined filters, literal search, pagination, API validation, detail visibility and Indian formatting using five temporary fixtures, removed afterward. Uses the same `TEST_BASE_URL` setting.
-- `npm run test:phase2`: run integration checks with the app running at http://127.0.0.1:3001 (`npm run dev -- --port 3001`); set `TEST_BASE_URL` for another URL. Creates and removes one temporary test fixture.
+   ```sh
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
 
-## JSON API
+3. Set `DATABASE_URL` to your local MySQL credentials and port. Create the database through MySQL or phpMyAdmin if needed:
 
-`GET /api/events` returns `{ events: [...] }` containing only active, upcoming events sorted by date, then ID. Dates are ISO UTC strings; prices are decimal strings to avoid precision loss. Database failures return HTTP 503 with `{ error: "..." }`. The browser fetches this JSON API, rather than accessing the database. Optional query parameters are `category`, `city`, `q`, `page` (default 1) and `pageSize` (default 6, maximum 50). All filters work together. Search matches title, description or city, case-insensitively using the MySQL collation; `%`, `_` and backslash are treated literally. The response also includes `pagination: { page, pageSize, total, totalPages }`. Pages beyond the last page are clamped; an empty result has page 1 and totalPages 0. Invalid query values return HTTP 400.
+   ```sql
+   CREATE DATABASE community_board CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
 
-Example: `/api/events?category=Music&city=Coimbatore&q=night&page=1&pageSize=6`.
+   URL-encode special characters in database credentials.
 
-`GET /api/events/options` returns categories and distinct cities with active upcoming events. `GET /api/events/:id` returns `{ event }` for an active upcoming event; inactive, past or missing events return 404. The public board and detail pages fetch these JSON APIs. Filters and the page number live in the URL so refresh and browser Back/Forward preserve them. Category/city changes apply immediately; submit text search with Search or Enter. Changing filters resets pagination to page 1.
+4. Apply migrations, seed data and start the app:
 
-Admin endpoints (protected routes accept the browser session cookie or bearer token):
+   ```sh
+   npm run db:setup
+   npm run db:admin
+   npm run dev
+   ```
 
-| Method | Endpoint                | Behaviour                                                                   |
-| ------ | ----------------------- | --------------------------------------------------------------------------- |
-| POST   | `/api/admin/login`      | `{ email, password }`; returns JWT and admin identity, sets session cookie. |
-| POST   | `/api/admin/logout`     | Clears the browser session cookie.                                          |
-| GET    | `/api/admin/events`     | All events including inactive and past. Requires admin.                     |
-| POST   | `/api/admin/events`     | Creates an active event. Requires admin.                                    |
-| PATCH  | `/api/admin/events/:id` | `{ active: boolean }`; changes status. Requires admin.                      |
-
-Create requests use `{ title, category, city, startsAt, price, description, imageUrl }`. `startsAt` is an ISO timestamp with timezone; `price` is a non-negative decimal string. Errors return JSON `{ error }` with 400 (validation), 401 (authentication), 403 (foreign origin), 404 (missing event), or 503 (service unavailable). No admin data is exposed before authorization.
-
-## Visitor accounts and My Feed
-
-Open `/signup` and create an account with an email and a password of at least 12 characters. There is no default visitor account. Signup signs you in; `/login` works for existing visitors. Both take you to `/favourites`, where you can select any of the five categories and save to open `/feed`. You can edit favourites anytime using the navigation or feed button.
-
-Preferences are saved in MySQL and restored after refresh/login. An empty selection is allowed and produces an empty personal feed with a category-selection prompt. When selected categories have no active upcoming events, the feed explains that and links to all events. The feed sorts nearest events first and supports six events per page.
-
-The API returns the JWT in the login/signup JSON response for mobile clients. The website uses the HttpOnly cookie set by those endpoints and does not store tokens in localStorage. Both the visitor cookie and the token expire after eight hours. Sign out clears the visitor cookie; an already issued bearer token remains valid until expiry. Use HTTPS in production for Secure cookies.
-
-| Method | Endpoint           | Behaviour                                                                                          |
-| ------ | ------------------ | -------------------------------------------------------------------------------------------------- |
-| POST   | `/api/auth/signup` | `{ email, password }`; creates a USER account and returns `{ token, user }` (201).                 |
-| POST   | `/api/auth/login`  | `{ email, password }`; returns `{ token, user }` (200).                                            |
-| POST   | `/api/auth/logout` | Clears the visitor session cookie.                                                                 |
-| GET    | `/api/auth/me`     | Current visitor identity; requires visitor authentication.                                         |
-| GET    | `/api/favourites`  | Returns `{ categories: [...] }` for the authenticated visitor.                                     |
-| PUT    | `/api/favourites`  | `{ categories: ["Music", "Food"] }`; replaces the visitor’s saved selection.                       |
-| GET    | `/api/feed`        | Active upcoming events in saved categories; accepts `page` and `pageSize` like the public listing. |
-
-Protected visitor endpoints accept the browser cookie or `Authorization: Bearer <token>`. Their responses are not cached. Email addresses are trimmed and normalized to lowercase. Signup rejects duplicate emails with 409 and rejects role injection; preferences reject unknown/duplicate categories and client-supplied user IDs (extra fields are rejected). APIs derive ownership only from the verified token. Saved preferences use a transaction and per-user row lock so concurrent replacement requests cannot mix category selections. Feed responses include `{ events, categories, pagination }`. The `/feed` and `/favourites` pages also enforce authentication on the server.
-
-## Reminders and card designer
-
-Every public/feed event card and the event detail page includes a Remind me button. Sign in to save reminders. Toggling updates the button immediately, disables repeat clicks during the save, and restores the previous state with an error message if saving fails. GET restores the saved state after refresh; PUT is idempotent. Each reminder belongs to one authenticated visitor and event.
-
-Open an event detail page to use Design your card. Choose Sunset, Ocean or Garden, and add any of the five stickers (Star, Music, Heart, Flower, Party), up to three at a time. Tap a sticker on the preview to remove it. The card changes live, with background transitions and sticker animations that respect reduced-motion preferences. Signed-in changes autosave per visitor/event; controls wait for each save to avoid out-of-order updates. Failed saves restore the prior choice and show a retryable message. Signed-out visitors can preview a design and are prompted to sign in to save it.
-
-| Method | Endpoint                   | Behaviour                                                                       |
-| ------ | -------------------------- | ------------------------------------------------------------------------------- |
-| GET    | `/api/events/:id/reminder` | Returns `{ reminded: boolean }` for the authenticated visitor.                  |
-| PUT    | `/api/events/:id/reminder` | `{ reminded: boolean }`; saves or removes the reminder.                         |
-| GET    | `/api/events/:id/design`   | Returns `{ design: { theme, stickers } }`; defaults to Sunset without stickers. |
-| PUT    | `/api/events/:id/design`   | `{ theme: "OCEAN", stickers: ["STAR", "MUSIC"] }`; replaces the saved design.   |
-
-All four endpoints require a visitor cookie or JWT bearer token, enforce active/upcoming event availability, and derive ownership from authentication. ID and JSON validation reject malformed requests, unknown themes/stickers, more than three stickers and client-supplied user IDs. Mutation routes reject foreign origins. No migration is needed: existing integer-keyed Reminder and CardDesign tables are reused.
+Open **http://localhost:3000**.
 
 ## Admin login
 
-Open `/admin/login` (or click Admin in the header). The example local credentials are:
+Open **`/admin/login`** with the credentials configured above:
 
 - Email: `admin@community.local`
 - Password: `CommunityAdmin@123`
 
-Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`, then run `npm run db:admin`. The script refuses to promote an existing visitor account and can be rerun to change the admin password. Use your own credentials for a deployment. `JWT_SECRET` must be at least 32 characters; generate a unique value using the command above.
+The seed stores a salted password hash, validates the email/password and refuses to promote an existing visitor account. To change admin credentials, update the environment configuration and rerun `npm run db:admin`. Admin links are separate from visitor navigation.
 
-After login, `/admin` lets you add an event and make any event Active or Inactive. New events are active. Dates entered in the form are IST and stored as UTC. No delete API or button is provided.
+## Implemented requirements
 
-## Database structure and design
+- Server-protected admin pages/APIs, event creation and Active/Inactive status; no event deletion.
+- Public active upcoming events, nearest date first; category, city and text filters combine with pagination.
+- Email/password signup and JWT login; saved favourite categories and personal upcoming-event feed.
+- Optimistic reminders: immediate update, refresh persistence and rollback/error message when saving fails.
+- Live event card designer: three themes, five sticker choices, up to three different stickers, removal, animations and saved choices per user/event.
+- Responsive phone/laptop UI, loading/empty/error states, inline frontend validation and Indian prices/friendly dates.
+- Admin editing, sorting and server pagination; database-backed categories/cities with inline creation, as requested during development.
 
-`User` and `Event` have MySQL `INT AUTO_INCREMENT` primary keys; every `userId`/`eventId` foreign key is also `INT`, keeping relation indexes compact.
-`User` stores a unique email, password hash and role; `Event` stores category, city, UTC start time, decimal INR price and active status.
-`FavouriteCategory` and `Reminder` use composite keys to prevent duplicate preferences and reminders.
-`CardDesign` stores one theme and a JSON sticker array per user/event; the API validates the three-sticker limit and accepts only the five supported sticker IDs.
-Foreign keys keep references valid, while events are deactivated rather than deleted. These tables prepare later phases without implementing their features yet.
+Guests can preview card designs; saving requires login. Dates display in Asia/Kolkata. External Google Fonts and Unsplash images need internet; system fonts and coloured image fallbacks are available.
 
-## Filters and indexes
+## Sample data
 
-The Prisma query ANDs active/upcoming conditions with category and city, then adds an OR across title, description and city for text search.
-It orders by `(startsAt, id)` and uses `skip`/`take`; the count and page query share a Repeatable Read transaction for a consistent response.
-Existing `(active, startsAt)` and `(active, category, city, startsAt)` indexes support the base and combined listings; add `(active, city, startsAt)` if city-only searches become frequent.
-A leading-wildcard substring search cannot use these indexes effectively; consider FULLTEXT for larger datasets, accepting its word-based search semantics.
+`prisma/seed.ts` creates **15 events**, five sample categories (Music, Workshop, Food, Sports, Kids) and three cities (Coimbatore, Chennai, Bengaluru).
 
-## Passwords and admin protection
+| Sample group | Count |
+| --- | --- |
+| Active upcoming | 11 |
+| Inactive upcoming | 2 |
+| Past | 2: one active, one inactive |
 
-Passwords use Node.js scrypt (N=32768, r=8, p=1) with a random 16-byte salt and constant-time hash comparison; plaintext passwords are not stored in MySQL.
-Login signs an eight-hour HS256 JWT with an issuer, audience and expiry, and sets an HttpOnly, SameSite=Strict cookie (Secure in production).
-The admin page and each event API verify the JWT and recheck the current ADMIN role in MySQL; mutation APIs also validate JSON and reject foreign origins.
-Mobile clients can send the returned token as `Authorization: Bearer <token>`. Logout clears the browser cookie; issued bearer tokens expire naturally. Visitor authentication is implemented with a separate visitor cookie and JWT audience, so admin and visitor sessions cannot access each other’s protected APIs.
+All events include the required fields. Prices include free entry, ordinary paid events and a ₹1,50,000 group package to demonstrate Indian grouping. Dates are relative to the seed date in IST; past/inactive events stay in the admin view and are excluded from public results.
 
-## What remains
+`npm run db:seed` refreshes the same sample event IDs 1–15, including their details/status/dates; it does not remove other events, cities, categories or visitor data. Rerun it before the demo to make samples upcoming again. Categories/cities are resolved by name and stored as integer foreign keys. `prisma/seed-admin.ts` creates/updates the configured admin separately.
 
-- Phase 6: end-to-end checks, final README answers and recording.
+## JSON API
 
-The responsive layout and Indian date/price formatting are implemented. External Google Fonts and Unsplash images require internet; system font and coloured image fallbacks remain available. Dates are displayed in Asia/Kolkata.
+Login/signup return `{ token, user }` and set an HttpOnly browser cookie. Protected routes also accept `Authorization: Bearer <token>` for mobile clients.
 
-## Verification
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/api/events` | Active upcoming listing; `categoryId`, `cityId`, `q`, `page`, `pageSize`. |
+| GET | `/api/events/options` | Category and city records for filters. |
+| GET | `/api/events/:id` | Active upcoming event details. |
+| GET | `/api/categories`, `/api/cities` | Lists of `{ id, name }` records. |
+| POST | `/api/auth/signup`, `/api/auth/login` | Visitor account creation/login; JWT returned. |
+| POST | `/api/auth/logout` | Clear visitor cookie. |
+| GET | `/api/auth/me` | Authenticated visitor identity for API clients. |
+| GET / PUT | `/api/favourites` | Read preferences / replace `{ categoryIds: [1, 3] }`. |
+| GET | `/api/feed` | Active upcoming events in saved categories; paginated. |
+| GET / PUT | `/api/events/:id/reminder` | Read/save `{ reminded: true }`. |
+| GET / PUT | `/api/events/:id/design` | Read/save `{ theme: "OCEAN", stickers: ["STAR", "MUSIC"] }`. |
+| POST | `/api/admin/login`, `/api/admin/logout` | Admin login / clear cookie. |
+| GET / POST | `/api/admin/events` | Paginated management listing / create event. |
+| PATCH | `/api/admin/events/:id` | Full event details or `{ active: false }`. |
+| POST | `/api/admin/categories`, `/api/admin/cities` | Create `{ name }`; duplicates return 409. |
 
-TypeScript checks and the Next.js production build pass. Prisma client generation succeeds. Dependency installation reports zero vulnerabilities after pinning Prisma/client to compatible 6.12.0 versions. The home page returns HTTP 200 and the events API returns the expected HTTP 503 JSON error when MySQL is unavailable.
+Create/edit input: `{ title, categoryId, cityId, startsAt, price, description, imageUrl }`. IDs are numbers, price is a decimal string and startsAt is an ISO timestamp with timezone. Event creation requires a future date; editing also requires a future date. Editing preserves status and relations.
 
-The initial migration and the data-preserving integer-ID migration have been applied successfully to the local `community_board` MySQL database, 15 sample events are seeded, and the admin account is created. Phase 2 integration checks pass for page/API protection, successful/failed login, password hashing, cookies, expired/tampered/wrong-role tokens, request validation, creation, saved Active/Inactive status, public visibility, unsupported DELETE requests and logout. The temporary test fixture is removed afterward.
+Public/feed responses include `{ events, pagination: { page, pageSize, total, totalPages } }`; feed also includes category records. Event responses contain IDs and display names. Obtain category/city IDs from their APIs rather than assuming IDs. Public/feed page size defaults to 6; admin defaults to 10; maximum is 50. Out-of-range pages are clamped. Name-based `category`/`city` query parameters remain supported for existing links.
 
-Phase 4 checks pass for signup/login JWTs, salted password hashes, server protection, saved/replaced/concurrent preferences, user isolation, feed filtering and pagination, token rejection, admin/visitor separation and logout. Temporary fixtures are removed after testing. No schema changes are needed: the existing integer User IDs and FavouriteCategory relation are reused.
+Admin filters: `q`, `status=all|active|inactive`, `sort=date-asc|date-desc|title-asc|price-asc|price-desc`, `page`, `pageSize`. Response includes global `stats`. Errors return JSON `{ error }` with appropriate validation/authentication/not-found/conflict/service-unavailable status codes.
 
-Phase 3 API checks cover combined/case-insensitive/literal filters, tied-date ordering, pagination without duplicates, page clamping, empty results, invalid queries, city options, public detail visibility and Indian formatting. The admin checks also pass with the paginated API.
+## Database structure — why this design? (answer 1)
 
-Phase 5 API and isolated Chrome tests pass for immediate reminders, failed-save rollback/error messages, refresh persistence, themes, three-sticker cap, removal, saved card choices, phone overflow and reduced motion. The event detail/designer page was reviewed at 1440px laptop and 390px phone widths; screenshot artifacts are in `/private/tmp/community-board-phase5`. Other pages still need the final visual review in Phase 6. Recording and GitHub submission remain for Phase 6.
+`User`, `Event`, `Category` and `City` have integer auto-increment IDs; events reference category/city IDs instead of fixed enum names.\
+Users store unique emails, password hashes and roles; events store UTC dates, decimal INR prices, descriptions, images and active status.\
+Favourites use `(userId, categoryId)`; reminders/designs use `(userId, eventId)` composite keys to prevent duplicates and isolate user choices.\
+Foreign keys preserve relations; categories/cities can grow without migrations, and deactivation keeps event history. Designs store a theme and validated JSON sticker array.
 
-Framework references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [Prisma 6 seeding](https://www.prisma.io/docs/orm/v6/prisma-migrate/workflows/seeding).
+## Filter query and index choice (answer 2)
 
-## Integer ID migration checkpoint
+Prisma ANDs active/upcoming conditions with category/city IDs, then uses a nested OR for title, description and city-name search.\
+Search is case-insensitive under MySQL collation and treats `%`, `_` and backslash literally; ordering uses `(startsAt, id)` for stable pages.\
+Count and page queries share a Repeatable Read transaction; indexes cover `(active, startsAt)` and `(active, categoryId, cityId, startsAt)`.\
+I would add `(active, cityId, startsAt)` for frequent city-only filtering; large-scale substring search could use FULLTEXT with different matching semantics.
 
-`20261010000200_integer_ids` converts User/Event IDs and all related foreign keys to integers without resetting the database. Sample events keep IDs 1–15, and other events use the auto-increment sequence from 16 onward. API event/user IDs are JSON numbers; URL parameters are validated and converted to integers. JWT subjects use the decimal ID encoded as a string, as required by JWT. Existing sessions from before the conversion require signing in again. A private pre-migration backup was saved locally and compared against the resulting database; all existing admin/event fields were preserved.
+## Passwords and admin protection (answer 3)
+
+Passwords use scrypt (N=32768, r=8, p=1), a random 16-byte salt and constant-time comparison; plaintext passwords are not stored.\
+Login signs an eight-hour HS256 JWT with issuer, audience and expiry; browser cookies are HttpOnly, SameSite=Strict and Secure in production.\
+Admin pages and APIs verify the token and recheck the ADMIN role in MySQL; visitor sessions have separate cookies/audiences and ownership checks.\
+Mutation APIs validate JSON and reject foreign origins; frontend checks improve usability while server validation remains authoritative.
+
+## Project structure
+
+```text
+src/app/(admin)/        Admin pages
+src/app/(user)/         Visitor pages and shared visitor layout
+src/app/api/           JSON endpoints for browser/mobile clients
+src/components/admin/  Admin sidebar, forms, table and scoped CSS
+src/components/user/   Visitor authentication, navigation, favourites and feed
+src/components/events/ Shared event cards, listing, details and designer
+src/components/shared/ Pagination and field errors
+src/hooks/admin/       Admin API state
+src/hooks/shared/      Catalogue loading and frontend validation
+src/lib/               Auth, transport, schemas, queries, formatting and DB helpers
+prisma/                Schema, four migrations and seed entry points
+```
+
+Route groups preserve public URLs. Shared transport, schemas, catalogue controls, pagination and server authentication avoid duplication. No JWT or credentials are stored in localStorage. Visitor identity initializes on the server, so guests do not make an unnecessary `/api/auth/me` request.
+
+## Checks and production
+
+```sh
+npm run typecheck
+npm run build
+```
+
+For production, provide a separate `.env` on the server or deployment environment variables with live DATABASE_URL, a stable JWT_SECRET and admin credentials. Use `NODE_ENV=production` for production database commands:
+
+```sh
+NODE_ENV=production npm run db:generate
+NODE_ENV=production npm run db:migrate
+NODE_ENV=production npm run db:admin
+npm run build
+npm run start
+```
+
+Use HTTPS in production. JWT refresh tokens are not implemented: users sign in again after eight hours. Logout clears the browser cookie; a copied bearer token remains valid until expiry. Secrets must stay out of Git.
+
+## Submission status and remaining work
+
+The application requirements are implemented; TypeScript/build and previous API/browser checks passed. Fresh MySQL setup is checked with all four migrations and seed data. Automated phase test scripts are no longer included in this repository.
+
+- Commit and push the current changes, preserving the regular phase commits.
+- Record a **3–4 minute walkthrough in your own voice** showing both phone and laptop layouts and explaining two or three code choices.
+- Add the recording share link below and confirm reviewers can watch it.
+
+Recording: **pending**.
+
+Suggested recording sequence: laptop filters/pagination → visitor signup/favourites/feed → phone reminder/designer and refresh persistence → admin create/edit/status → briefly explain integer relations, server auth and optimistic rollback. The video is a required submission item and has not been created by this app.

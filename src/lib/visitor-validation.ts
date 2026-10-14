@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { categories } from "@/lib/event-validation";
+import { catalogIdInput } from "@/lib/catalog-validation";
 const email = z
   .string()
   .trim()
+  .min(1, "Enter your email address.")
   .email("Enter a valid email address.")
-  .max(254)
+  .max(254, "Keep your email under 254 characters.")
   .transform((value) => value.toLowerCase());
 export const signupInput = z
   .object({
@@ -18,14 +19,17 @@ export const signupInput = z
 export const loginInput = z
   .object({
     email,
-    password: z.string().min(1, "Enter your password.").max(256),
+    password: z
+      .string()
+      .min(1, "Enter your password.")
+      .max(256, "Keep your password under 256 characters."),
   })
   .strict();
 export const favouritesInput = z
   .object({
-    categories: z
-      .array(z.enum(categories))
-      .max(5)
+    categoryIds: z
+      .array(catalogIdInput)
+      .max(1000)
       .refine(
         (value) => new Set(value).size === value.length,
         "Choose each category only once.",

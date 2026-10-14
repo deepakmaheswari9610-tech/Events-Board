@@ -1,19 +1,15 @@
 import { z } from "zod";
-export const categories = [
-  "Music",
-  "Workshop",
-  "Food",
-  "Sports",
-  "Kids",
-] as const;
-export const eventInput = z
+import { catalogIdInput } from "@/lib/catalog-validation";
+export const DESCRIPTION_MAX_LENGTH = 10000;
+export const eventDetailsInput = z
   .object({
     title: z.string().trim().min(1, "Please enter a title.").max(180),
-    category: z.enum(categories),
-    city: z.string().trim().min(1, "Please enter a city.").max(100),
+    categoryId: catalogIdInput,
+    cityId: catalogIdInput,
     startsAt: z
       .string()
-      .datetime({ offset: true })
+      .min(1, "Choose a date and time.")
+      .datetime({ offset: true, message: "Choose a valid date and time." })
       .refine(
         (value) => Date.parse(value) > Date.now(),
         "Choose a future event date and time.",
@@ -28,14 +24,28 @@ export const eventInput = z
       .string()
       .trim()
       .min(1, "Please enter a description.")
-      .max(10000),
+      .max(
+        DESCRIPTION_MAX_LENGTH,
+        "Description must be 10,000 characters or fewer.",
+      ),
     imageUrl: z
       .string()
       .url("Enter a valid image URL.")
       .max(2048)
-      .refine(
-        (value) => ["https:", "http:"].includes(new URL(value).protocol),
-        "Use an HTTP or HTTPS image URL.",
-      ),
+      .refine((value) => {
+        try {
+          return ["https:", "http:"].includes(new URL(value).protocol);
+        } catch {
+          return false;
+        }
+      }, "Use an HTTP or HTTPS image URL."),
   })
   .strict();
+
+export const eventInput = eventDetailsInput;
+export const eventUpdateInput = z.union([
+  z.object({ active: z.boolean() }).strict(),
+  eventDetailsInput,
+]);
+
+export type EventInput = z.infer<typeof eventDetailsInput>;

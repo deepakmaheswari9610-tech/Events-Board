@@ -7,20 +7,16 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
-    "db:seed": "prisma db seed",
+    "db:generate": "if [ \"$NODE_ENV\" != \"production\" ] && [ -f .env.development.local ]; then node --env-file=.env.development.local node_modules/prisma/build/index.js generate; else node node_modules/prisma/build/index.js generate; fi",
+    "db:migrate": "if [ \"$NODE_ENV\" != \"production\" ] && [ -f .env.development.local ]; then node --env-file=.env.development.local node_modules/prisma/build/index.js migrate deploy; else node node_modules/prisma/build/index.js migrate deploy; fi",
+    "db:seed": "if [ \"$NODE_ENV\" != \"production\" ] && [ -f .env.development.local ]; then node --env-file=.env.development.local node_modules/prisma/build/index.js db seed; else node node_modules/prisma/build/index.js db seed; fi",
     "db:setup": "npm run db:generate && npm run db:migrate && npm run db:seed",
-    "db:admin": "tsx --env-file=.env prisma/seed-admin.ts",
-    "test:phase2": "node --env-file=.env scripts/verify-phase2.mjs",
-    "test:phase3": "tsx --env-file=.env scripts/verify-phase3.ts",
-    "test:phase4": "node --env-file=.env scripts/verify-phase4.mjs",
-    "test:phase5": "node --env-file=.env scripts/verify-phase5.mjs",
-    "test:phase5:ui": "node --env-file=.env scripts/verify-phase5-ui.mjs"
+    "db:admin": "if [ \"$NODE_ENV\" != \"production\" ] && [ -f .env.development.local ]; then tsx --env-file=.env.development.local prisma/seed-admin.ts; elif [ -f .env ]; then tsx --env-file=.env prisma/seed-admin.ts; else tsx prisma/seed-admin.ts; fi"
   },
   "dependencies": {
     "@prisma/client": "6.12.0",
     "jose": "^6.2.12",
+    "lucide-react": "^1.56.0",
     "next": "^16.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -28,7 +24,6 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@playwright/test": "^1.64.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

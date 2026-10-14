@@ -7,14 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Category {
-  Music
-  Workshop
-  Food
-  Sports
-  Kids
-}
-
 enum Role {
   USER
   ADMIN
@@ -40,8 +32,10 @@ model User {
 model Event {
   id          Int          @id @default(autoincrement())
   title       String       @db.VarChar(180)
-  category    Category
-  city        String       @db.VarChar(100)
+  categoryId  Int
+  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  cityId      Int
+  city        City         @relation(fields: [cityId], references: [id], onDelete: Restrict)
   startsAt    DateTime     @db.DateTime(3)
   price       Decimal      @db.Decimal(12, 2)
   description String       @db.Text
@@ -53,15 +47,32 @@ model Event {
   designs     CardDesign[]
 
   @@index([active, startsAt])
-  @@index([active, category, city, startsAt])
+  @@index([active, categoryId, cityId, startsAt])
+}
+
+model Category {
+  id         Int                 @id @default(autoincrement())
+  name       String              @unique @db.VarChar(100)
+  createdAt  DateTime            @default(now())
+  events     Event[]
+  favourites FavouriteCategory[]
+}
+
+model City {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  createdAt DateTime @default(now())
+  events    Event[]
 }
 
 model FavouriteCategory {
-  userId   Int
-  category Category
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+  categoryId Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
-  @@id([userId, category])
+  @@id([userId, categoryId])
+  @@index([categoryId])
 }
 
 model Reminder {

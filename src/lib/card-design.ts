@@ -16,8 +16,14 @@ export const designInput = z
     theme: z.enum(["SUNSET", "OCEAN", "GARDEN"]),
     stickers: z
       .array(z.enum(["STAR", "MUSIC", "HEART", "FLOWER", "PARTY"]))
-      .max(3, "You can add up to three stickers."),
+      .max(3, "You can add up to three stickers.")
+      .refine(value => new Set(value).size === value.length, "Each sticker can only be added once."),
   })
   .strict();
 export type CardChoice = z.infer<typeof designInput>;
 export const defaultDesign: CardChoice = { theme: "SUNSET", stickers: [] };
+
+/** Old saved cards may contain repeated stickers; keep the first occurrence. */
+export function parseSavedDesign(input: { theme: string; stickers: unknown }): CardChoice {
+  return designInput.parse({ ...input, stickers: Array.isArray(input.stickers) ? [...new Set(input.stickers)] : input.stickers });
+}

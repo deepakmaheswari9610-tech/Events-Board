@@ -1,8 +1,8 @@
-import { Category, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 const db = new PrismaClient();
 const samples: [
   string,
-  Category,
+  string,
   string,
   number,
   string,
@@ -41,7 +41,7 @@ const samples: [
     "Local favourites, fresh flavours and a whole lot to taste.",
   ],
   [
-    "Sunday morning community run",
+    "Morning community run",
     "Sports",
     "Coimbatore",
     5,
@@ -141,7 +141,7 @@ const samples: [
     "Meet local bakers over homemade treats.",
   ],
   [
-    "Last weekend’s football meetup",
+    "Previous football meetup",
     "Sports",
     "Bengaluru",
     -5,
@@ -151,7 +151,7 @@ const samples: [
     "A friendly football match for local players.",
   ],
   [
-    "Last month’s puppet show",
+    "Previous puppet show",
     "Kids",
     "Coimbatore",
     -20,
@@ -161,7 +161,7 @@ const samples: [
     "An afternoon of playful puppets and stories.",
   ],
 ];
-const photos: Record<Category, string> = {
+const photos: Record<string, string> = {
   Music: "photo-1516280440614-37939bbacd81",
   Workshop: "photo-1455390582262-044cdead277a",
   Food: "photo-1504674900247-0877df9cc836",
@@ -169,6 +169,30 @@ const photos: Record<Category, string> = {
   Kids: "photo-1503454537195-1dcabb73ffb9",
 };
 async function main() {
+  const categoryIds = new Map(
+    await Promise.all(
+      [...new Set(samples.map((sample) => sample[1]))].map(async (name) => {
+        const category = await db.category.upsert({
+          where: { name },
+          create: { name },
+          update: {},
+        });
+        return [name, category.id] as const;
+      }),
+    ),
+  );
+  const cityIds = new Map(
+    await Promise.all(
+      [...new Set(samples.map((sample) => sample[2]))].map(async (name) => {
+        const city = await db.city.upsert({
+          where: { name },
+          create: { name },
+          update: {},
+        });
+        return [name, city.id] as const;
+      }),
+    ),
+  );
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
     year: "numeric",
@@ -181,8 +205,8 @@ async function main() {
       startsAt.setUTCDate(startsAt.getUTCDate() + days);
       const data = {
         title,
-        category,
-        city,
+        categoryId: categoryIds.get(category)!,
+        cityId: cityIds.get(city)!,
         startsAt,
         price,
         active,

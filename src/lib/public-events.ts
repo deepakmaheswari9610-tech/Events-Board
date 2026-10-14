@@ -1,12 +1,14 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { categories } from "@/lib/event-validation";
+
 export const eventSelect = {
   id: true,
   title: true,
-  category: true,
-  city: true,
+  category: { select: { id: true, name: true } },
+  categoryId: true,
+  city: { select: { id: true, name: true } },
+  cityId: true,
   startsAt: true,
   price: true,
   description: true,
@@ -22,7 +24,9 @@ const positiveInteger = (maximum: number) =>
       "Pagination value is too large.",
     );
 const filters = z.object({
-  category: z.enum(categories).optional(),
+  categoryId: positiveInteger(2147483647).optional(),
+  category: z.string().trim().min(1).max(100).optional(),
+  cityId: positiveInteger(2147483647).optional(),
   city: z.string().trim().max(100).optional(),
   q: z
     .string()
@@ -36,10 +40,9 @@ export function parseEventQuery(url: string) {
   const params = new URL(url).searchParams;
   return filters.parse(
     Object.fromEntries(
-      ["category", "city", "q", "page", "pageSize"].map((key) => [
-        key,
-        params.get(key)?.trim() || undefined,
-      ]),
+      ["categoryId", "category", "cityId", "city", "q", "page", "pageSize"].map(
+        (key) => [key, params.get(key)?.trim() || undefined],
+      ),
     ),
   );
 }
@@ -51,14 +54,16 @@ export function eventWhere(
   return {
     active: true,
     startsAt: { gte: now },
-    ...(query.category ? { category: query.category } : {}),
-    ...(query.city ? { city: query.city } : {}),
+    ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+    ...(query.category ? { category: { name: query.category } } : {}),
+    ...(query.cityId ? { cityId: query.cityId } : {}),
+    ...(query.city ? { city: { name: query.city } } : {}),
     ...(search
       ? {
           OR: [
             { title: { contains: search } },
             { description: { contains: search } },
-            { city: { contains: search } },
+            { city: { name: { contains: search } } },
           ],
         }
       : {}),
@@ -69,6 +74,8 @@ export function serializeEvent(
 ) {
   return {
     ...event,
+    category: event.category.name,
+    city: event.city.name,
     price: event.price.toFixed(2),
     startsAt: event.startsAt.toISOString(),
   };

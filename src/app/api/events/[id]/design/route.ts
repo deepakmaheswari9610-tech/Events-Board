@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { apiError, checkOrigin, readJson } from "@/lib/api";
 import { eventOwner } from "@/lib/event-owner";
-import { defaultDesign, designInput } from "@/lib/card-design";
+import { defaultDesign, designInput, parseSavedDesign } from "@/lib/card-design";
 type Context = { params: Promise<{ id: string }> };
 export async function GET(request: Request, { params }: Context) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: Request, { params }: Context) {
       where: { userId_eventId: owner },
     });
     const design = saved
-      ? designInput.parse({ theme: saved.theme, stickers: saved.stickers })
+      ? parseSavedDesign({ theme: saved.theme, stickers: saved.stickers })
       : defaultDesign;
     return NextResponse.json(
       { design },
